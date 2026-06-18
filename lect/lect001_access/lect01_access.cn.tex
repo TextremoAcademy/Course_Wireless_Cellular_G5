@@ -1,0 +1,438 @@
+\documentclass{article}
+\input{../../common_latex/import_include}
+\input{../../common_latex/import_authors}
+%-----------------------------------------------
+% title
+% 
+\title{
+	\Huge \textbf{NR Access} \\[1em]
+}
+\author{}
+\date{}
+
+%-----------------------------------------------
+% document
+%
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Terminology}
+\input{../../common_latex/import_terms}
+
+\section{介绍}
+本节课程主要介绍NR接入流程。
+
+
+
+\section{PRACH接入}
+\subsection{工程经验}
+UE侧的处理还会延迟约5个TA，物理层针对Preamble检测预留了2个TA的保护。如果考虑工程经验，覆盖范围还需要缩减。
+
+\subsection{最大小区半径}
+首先我们需要根据小区半径来选择PRACH Format来发送。
+\begin{itemize}
+\item Format 0$\to$3（仅支持FR1，详见TS38211 Table 6.3.3.2-2, Table 6.3.3.2-3, Table 6.3.3.2-4）\\
+TS38211 5.3.2 OFDM baseband signal generation for PRACH原文如下"$N_{CP,l}^{RA}=N_{CP}^{RA}+n∙16k$ where for $\Delta f_{RA}={1.25,5}kHz$, n=0"\cite{38211}。这个说明对于format0$\to$3，原始的CP长度就是PRACH的CP长度。对于format0$\to$3，调度的slot是按照15kHz调度的\footnote{TS38211 6.3.3.2 Mapping to physical resources规定FR1按照15kHz计算slot数量，而format0$\to$3只占用FR1，且NR的调度单元是slot，所以一旦调度PRACH format 0$\to$3就会按照15kHz slot连续调度}。
+
+为了避免PRACH自我干扰和干扰到其他调度单元，UE和BS空口传输时间$T_{prop}$必须满足
+\begin{equation}
+    min\{N_{CP}^{RA}, N_{seq}, N_{gap}\} \geq 2T_{prop}\footnotemark
+\end{equation}
+\footnotetext{这里是2$T_{prop}$：首先UE的时间窗口比BS的时间窗口晚了$T_{prop}$；为了克服UE发送中的时延，$T_{prop}$，UE相对自己的时间窗需要提前$T_{prop}$；需要相对BS的时间窗口提前2$T_{prop}$\label{fn:PRACH-2Tprop_reason}}
+其中$N_{seq}$是PRACH中一个preamble的长度。
+
+\begin{itemize}
+\item Format 0: $N_{CP}^{RA} + N_u$=3168k+24576k=27744$k$=0.096875(ms), $N_{gap}$=1-0.096875=2976k\\
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=14.5312(km)
+\]
+\item Format 1: $N_{CP}^{RA} + N_u$=21024k+2$\cdot$24576k=70176$k$=2.2844(ms), $N_{gap}$=3-2.2844=21984k
+\[
+r_{cell} = N_{CP}^{RA}\cdot 3e8/2=102.6562(km)
+\]
+\item Format 2: $N_{CP}^{RA} + N_u$=4688k+4$\cdot$24576k=102992$k$=3.3526(ms), $N_{gap}$=3.5-3.3526=4528k
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=22.1094(km)
+\]
+\item Format 3: $N_{CP}^{RA} + N_u$=3168k+4$\cdot$24576k=27744$k$=0.096875(ms), $N_{gap}$=1-0.096875=2976k
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=14.5312(km)
+\]
+\end{itemize}
+
+\item Format A1$\to$A3支持\{15, 30, 60, 120, 480, 960\}kHz（没有$N_{gap}$）
+\begin{itemize}
+\item Format A1: $N_{CP}^{RA} + N_u$=$(288k+2\cdot 2048k)\cdot 2^{-\mu}$=$2\cdot(144k+2048k)\cdot 2^{-\mu}$, $N_{gap}$=0
+\[
+r_{cell} = N_{CP}^{RA}\cdot 3e8/2=\begin{cases}
+1.4062(km) & scs=15kHz \\
+0.7031(km) & scs=30kHz \\
+0.3516(km) & scs=60kHz \\
+0.1758(km) & scs=120kHz \\
+0.0439(km) & scs=480kHz \\
+0.0220(km) & scs=960kHz
+\end{cases}
+\]
+\item Format A2: $N_{CP}^{RA} + N_u$=$(576k+4\cdot 2048k)\cdot 2^{-\mu}$=$4\cdot(144k+2048k)\cdot 2^{-\mu}$, $N_{gap}$=0
+\[
+r_{cell} = N_{CP}^{RA}\cdot 3e8/2=\begin{cases}
+2.8125(km) & scs=15kHz \\
+1.4062(km) & scs=30kHz \\
+0.7031 (km) & scs=60kHz \\
+0.3516(km) & scs=120kHz \\
+0.0879(km) & scs=480kHz \\
+0.0439(km) & scs=960kHz
+\end{cases}
+\]
+\item Format A3: $N_{CP}^{RA} + N_u$=$(864k+6\cdot 2048k)\cdot 2^{-\mu}$=$6\cdot(144k+2048k)\cdot 2^{-\mu}$, $N_{gap}$=0
+\[
+r_{cell} = N_{CP}^{RA}\cdot 3e8/2=\begin{cases}
+4.2188(km) & scs=15kHz \\
+2.1094(km) & scs=30kHz \\
+1.0547(km) & scs=60kHz \\
+0.5273(km) & scs=120kHz \\
+0.1318(km) & scs=480kHz \\
+0.0659(km) & scs=960kHz
+\end{cases}
+\]
+\end{itemize}
+
+\item Format B1$\to$B4, Format C0,C2支持\{15, 30, 60, 120, 480, 960\}kHz（由于每次重复都占用一个OFDM symbol，那么所有slot中CP时间扣除$N_{CP}^{RA}$后就是$N_{gap}$）
+\begin{itemize}
+\item Format B1, $N_{CP}^{RA}$=$216k\cdot 2^{-\mu}$, $N_{gap}$=$72k\cdot 2^{-\mu}$
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=\begin{cases}
+0.3516(km) & scs=15kHz \\
+0.1758(km) & scs=30kHz \\
+0.0879(km) & scs=60kHz \\
+0.0439(km) & scs=120kHz \\
+0.0110(km) & scs=480kHz \\
+0.0055(km) & scs=960kHz
+\end{cases}
+\]
+\item Format B2, $N_{CP}^{RA}$=$360k\cdot 2^{-\mu}$, $N_{gap}$=$216k\cdot 2^{-\mu}$
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=\begin{cases}
+1.0547(km) & scs=15kHz \\
+0.5273(km) & scs=30kHz \\
+0.2637(km) & scs=60kHz \\
+0.1318(km) & scs=120kHz \\
+0.0330(km) & scs=480kHz \\
+0.0165(km) & scs=960kHz
+\end{cases}
+\]
+\item Format B3, $N_{CP}^{RA}$=$504k\cdot 2^{-\mu}$, $N_{gap}$=$360k\cdot 2^{-\mu}$
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=\begin{cases}
+1.7578(km) & scs=15kHz \\
+0.8789(km) & scs=30kHz \\
+0.4395(km) & scs=60kHz \\
+0.2197(km) & scs=120kHz \\
+0.0549(km) & scs=480kHz \\
+0.0275(km) & scs=960kHz
+\end{cases}
+\]
+\item Format B4, $N_{CP}^{RA}$=$936k\cdot 2^{-\mu}$, $N_{gap}$=$792k\cdot 2^{-\mu}$
+\[
+r_{cell} = N_{gap}\cdot 3e8/2=\begin{cases}
+3.8672(km) & scs=15kHz \\
+1.9336(km) & scs=30kHz \\
+0.9668(km) & scs=60kHz \\
+0.4834(km) & scs=120kHz \\
+0.1208(km) & scs=480kHz \\
+0.0604(km) & scs=960kHz
+\end{cases}
+\]
+\item Format C0, $N_{CP}^{RA}$=$1240k\cdot 2^{-\mu}$, $N_{gap}$=$1096k\cdot 2^{-\mu}$
+\[
+r_{cell} = N_{CP}^{RA}\cdot 3e8/2=\begin{cases}
+5.3516(km) & scs=15kHz \\
+2.6758(km) & scs=30kHz \\
+1.3379(km) & scs=60kHz \\
+0.6689(km) & scs=120kHz \\
+0.1672(km) & scs=480kHz \\
+0.0836(km) & scs=960kHz
+\end{cases}
+\]
+\item Format C2, $N_{CP}^{RA}$=$2048k\cdot 2^{-\mu}$, $N_{gap}$=$2912k\cdot 2^{-\mu}$
+\[
+r_{cell} = N_{CP}^{RA}\cdot 3e8/2=\begin{cases}
+10(km) & scs=15kHz \\
+5(km) & scs=30kHz \\
+2.5(km) & scs=60kHz \\
+1.25(km) & scs=120kHz \\
+0.3125(km) & scs=480kHz \\
+0.1562(km) & scs=960kHz
+\end{cases}
+\]
+\end{itemize}
+\end{itemize}
+
+\subsubsection{计算当前小区适配的$N_{cs}$}
+上面给出的最大小区半径是$N_{cs}=0$，如果小区半径在最大半径以内，则可以计算$N_{cs}$最小值以满足最大半径覆盖范围(如果考虑定时误差、多径时延冗余、安全冗余还需要增加$T_{sec}$)。
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.5\textwidth, keepaspectratio]{lect001_access_tdd_guard}
+    \caption{TDD Guad时间}
+    \label{fig:example}
+\end{figure}
+\[
+N_{cs} = L_{RA}\lfloor \frac{2r_{cell}/c+T_{sec}}{T_{seq}} \rfloor
+\]
+
+
+\subsection{小区半径对TDD Slot结构的限制}
+小区半径此时已经确认，TDD传输时DL$\to$UL切换时，需要预留保护间隔（GAP），确保上下行隔离，不存在交叠。如下图所示，GAP的长度要求大于下行延时量和上行提前量之和，即$2T_{prop}+N_{TA,offset}$，其中$T_{prop}$表示小区边缘用户的信号接收时延。
+\[
+T_{guard} \geq N_{TA,offset} + 2T_{prop}\textsuperscript{\ref{fn:PRACH-2Tprop_reason}}
+\]
+其中$T_{prop}$就是小区半径导致的传输延时。
+\begin{longtable}{|p{0.15\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+\caption{PRACH Long Format $T_{guard} $}\\
+\hline
+ & \multicolumn{1}{|c|}{$N_{TA,offset}=25600$} & \multicolumn{1}{|c|}{$N_{TA,offset}=39936$} \\ \hline
+Format 0 & 3376k & 3600k \\ \hline
+Format 1 & 22384k & 22608k \\ \hline
+Format 2 & 4928k & 5152k \\ \hline
+Format 3 & 3376k & 3600k \\ \hline
+\end{longtable}
+
+\begin{longtable}{|p{0.15\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|p{0.15\textwidth}|}
+\caption{PRACH Short Format $T_{guard} $}\\
+\hline
+& \multicolumn{1}{|c|}{$N_{TA,offset}=25600$} & \multicolumn{1}{|c|}{$N_{TA,offset}=39936$} & \multicolumn{1}{|c|}{$N_{TA,offset}=13792$} \\ \hline
+Format A1 & 288k$\cdot 2^{-\mu}$+400 & 288k$\cdot 2^{-\mu}$+624 & 288k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format A2 & 576k$\cdot 2^{-\mu}$+400 & 576k$\cdot 2^{-\mu}$+624 & 576k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format A3 & 864k$\cdot 2^{-\mu}$+400 & 864k$\cdot 2^{-\mu}$+624 & 864k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format B1 & 72k$\cdot 2^{-\mu}$+400 & 72k$\cdot 2^{-\mu}$+624 & 72k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format B2 & 216k$\cdot 2^{-\mu}$+400 & 216k$\cdot 2^{-\mu}$+624 & 216k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format B3 & 360k$\cdot 2^{-\mu}$+400 & 360k$\cdot 2^{-\mu}$+624 & 360k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format B4 & 792k$\cdot 2^{-\mu}$+400 & 792k$\cdot 2^{-\mu}$+624 & 792k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format C0 & 1096k$\cdot 2^{-\mu}$+400 & 1096k$\cdot 2^{-\mu}$+624 & 1096k$\cdot 2^{-\mu}$+215.5 \\ \hline
+Format C2 & 2048k$\cdot 2^{-\mu}$+400 & 2048k$\cdot 2^{-\mu}$+624 & 2048k$\cdot 2^{-\mu}$+215.5 \\ \hline
+\end{longtable}
+
+
+
+\paragraph{$N_{TA,offset}$}\mbox{}\\
+\begin{itemize}
+\item $N_{TA,offset}$由高层RRC n-TimingAdvanceOffset（出现在ServingCellConfigCommon和\\
+ServingCellConfigCommonSIB 中），有$n0, n25600, n39936$三个值（表示对应的数量的tc）\cite{38331}。
+\item 高层RRC n-TimingAdvanceOffset没有配置时，UE采用38133给的默认值（TS38213 4.2Transmission timing adjustments的原文是"If the UE is not provided n-TimingAdvanceOffset for a serving cell, the UE determines a default value NTA,offset of the timing advance offset for the serving cell as described in [10, TS 38.133]"）\cite{38213}。
+\begin{itemize}
+\item TS38133 7.1.1	Introduction原文"$N_{TA}$ offset for first TAG and second TAG are as defined in n-TimingAdvanceOffset and n-TimingAdvanceOffset2 respectively, if configured, otherwise it is $N_{TA,offset}$ defined in table 7.1.2-2."\cite{38133}。这说明缺省时，采用Table 7.1.2-2配置。
+
+\begin{longtable}{|p{0.8\textwidth}|p{0.19\textwidth}|}
+\caption{TS38133 Table 7.1.2-2\cite{38133}}\\
+\hline
+\multicolumn{1}{|c|}{Frequency range and band of cell used for uplink transmission} & \multicolumn{1}{c|}{$N_{TA,offset}$(Unit: $T_c$)} \\ \hline
+FR1 FDD or TDD band with neither E-UTRA–NR nor NB-IoT–NR coexistence case & 25600 \\ \hline
+FR1 FDD band with E-UTRA–NR and/or NB-IoT–NR coexistence case & 0 \\ \hline
+FR1 TDD band with E-UTRA–NR and/or NB-IoT–NR coexistence case & 39936 \\ \hline
+FR2 & 13792 \\ \hline
+\end{longtable}
+
+\end{itemize}
+
+\end{itemize}
+
+
+
+
+\section{故障排查}
+
+
+\subsection{Background}
+
+
+
+\section{Time Frequency Domain}
+todo
+
+\section{PRACH}
+\subsection{Root Sequence}
+\begin{itemize}
+\item 对于非限制集，所有的根序列u_i都是可用的（见TS38211 表6.3.3.1-2, 6.3.3.1-3, 6.3.3.1-4A, 6.3.3.1-4B ）
+
+\item 对于限制集A和B，我们需要检查当前根序列u_i中是否有可用的preamble\\
+计算最小非负整数$q$, $(qu)mod L_{RA}=1$
+\[
+d_u = \begin{cases}
+q & 0 \leq q \leq L_{RA}/2\\
+L_{RA} - q & q > L_{RA}/2\\
+\end{cases}
+\]
+\begin{itemize}
+\item 限制集A需要满足$N_{cs} \leq d_u \leq (L_{RA}−N_{cs})/2$
+\item 限制集B需要满足3个条件之一
+\[
+\begin{split}
+N_{cs} &\leq d_u \leq (L_{RA} - N_{cs})/4 \\
+(L_{RA}+N_{cs})/4 &\leq d_u \leq (L_{RA} - N_{cs})/3 \\
+(L_{RA}+N_{cs})/3 &\leq d_u \leq (L_{RA} - N_{cs})/2
+\end{split}
+\]
+\end{itemize}
+\end{itemize}
+\subsubsection{$q$的由来}
+从根序列索引 $u$ 推导到其模逆元 $q$本质上是利用了高斯和（Gauss Sum）的性质以及离散傅里叶变换（DFT）的二次相位保持特性。
+\begin{align}
+x_u(i) &= e^{-j\frac{\pi ui(i+1)}{L_{RA}}} \\
+X_u(k) &= \sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi ui(i+1)}{L_{RA}}}e^{-j\frac{2\pi ki}{L_{RA}}} \\
+&= \sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi}{L_{RA}} (ui^2 + ui + 2ki)   }\label{prach-Xu_orig}
+\end{align}
+其中$e^{-j\frac{2\pi ki}{L_{RA}}}$可以进行重新推导，设$qu=mL_{RA}+1$
+\begin{align}
+e^{-j\frac{2\pi ki}{L_{RA}}} &= e^{-j\frac{2\pi ki + 2\pi ki mL_{RA}}{L_{RA}}} \\
+&= e^{-j\frac{2\pi ki(mL_{RA} +1)}{L_{RA}}} \\
+&= e^{-j\frac{2\pi ki qu}{L_{RA}}}\label{prach-1_qu} 
+\end{align}
+把\eqref{prach-1_qu}带入\eqref{prach-1_qu}得到
+\begin{align}
+X_u(k) &= \sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi}{L_{RA}} (ui^2 + ui + 2kiuq)   } \\
+&= \sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi}{L_{RA}} u(i^2 + i + 2kqi) } \\
+&= \sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi}{L_{RA}} u(i^2 + 2\frac{1 + 2kq}{2}i + \frac{(1 + 2kq)^2}{4} - \frac{(i + 2kq)^2}{4})} \\
+&= \sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi}{L_{RA}}u(i + \frac{1 + 2kq}{2})^2} e^{j\frac{\pi}{L_{RA}}u\frac{(1 + 2kq)^2}{4}} \\
+&= \underbrace{e^{j\frac{u\pi(1 + 2kq)^2}{4L_{RA}}}}_{phase}\underbrace{\sum_{i=0}^{L_{RA}-1} e^{-j\frac{\pi}{L_{RA}}u(i + \frac{1 + 2kq}{2})^2}}_{Quad-Gauss-Sum}
+\end{align}
+Let's look at the Quad-Gauss-Sum part
+\begin{align}
+dg
+\end{align}
+
+
+
+\subsection{}
+%5G 的时间单位$t_c=\frac{1}{\Delta f_{\max}\cdot 4096}$, 5G 的FFT size最大是4096（）
+\begin{equation}
+s_l^{p,\mu} = \sum_{k=0}^{L_{RA}-1}\alpha^{(p,RA)}_k e^{j2\pi(k+Kk_1+\bar{k})\Delta f_{RA}(t-N_{CP,l}^{RA}T_c - t^{RA}_{start})}
+\end{equation}
+其中$\alpha^{(p,RA)}_k$是PRACH频域的信号，我们要把它映射到$l$ timeslot上面\\
+$t^{\text{RA}}_{\text{start}} \leq t < t^{\text{RA}}_{\text{start}} + (N_{\text{u}} + N_{\text{CP}, l}^{\text{RA}})T_\text{c}$
+\subsection{频率部分}
+首先我们要确定每个子载波的绝对频率$e^{j2\pi(k+Kk_1+\bar{k})}\Delta f_{RA}$
+	\begin{itemize}
+	\item $\Delta f_{RA}$是PRACH子载波间隔\\
+	1.25kHz或5kHz用于低频段（FR1）的长前导码（$L_{RA}$ = 839），覆盖范围大\\
+	15kHz, 30kHz, 60 kHz, 120 kHz：用于高频段（FR2）或特殊场景的短前导码（$L_{RA}$ = 139, 571, 1151），更适合高速和短时延需求。
+	\item $\Delta f$是bandwidth part的子载波间隔（inital access bandwidth part 或 the active bandwith part）
+	\item $K=\frac{\Delta f}{\Delta f_{RA}}$是比例因子（Scaling Factor）。
+	\item $k_1$是一个频率偏移
+	\begin{align*}
+	k_1 &= k^{\mu}_0 + (N^{\text{start}}_{\text{BWP}, i} - N^{\text{start}, \mu}_{\text{grid}})N^{\text{RB}}_{\text{SC}} - N^{\text{size}, \mu}_{\text{grid}}N^{\text{RB}}_{\text{SC}} + n^{\text{start}}_{\text{RA}}N^{\text{RB}}_{\text{sc}} \\
+	&+\begin{cases}
+	n_{\text{RA}}N^{\text{RA}}_{\text{RB}}N^{\text{RB}}_{\text{sc}} & L_{\text{RA}}\in\{139, 839\} \\
+	n_{\text{RA}}N^{\text{RA}}_{\text{RB}}N^{\text{RB}}_{\text{sc}} & L_{\text{RA}}\in\{571, 1151\} \text{ in FR2-2} \\
+	(N^{\text{start}, \mu}_{\text{RB, UL}, n_0+n_{\text{RA}}} - N^{\text{start}, \mu}_{\text{RB, UL}, n_0} ) N^{\text{RB}}_{\text{sc}} & L_{\text{RA}}\in\{571, 1151\} \text{ in FR1}
+	\end{cases}
+	\end{align*}
+		\begin{itemize}
+		\item $k^{\mu}_0$是让不同子载波间隔配置（numerology）下偏移（相对最大子载波间隔$\mu_0$对应的资源块的频域中心）
+		\[
+		k^{\mu}_0 = (N^{\text{start},\mu}_{\text{grid},x} + N^{\text{size},\mu}_{\text{grid},x}/2)N_{\text{sc}}^{\text{RB}} - (N^{\text{start},\mu_0}_{\text{grid},x} + N^{\text{size},\mu_0}_{\text{grid},x}/2)N_{\text{sc}}^{\text{RB}}2^{\mu_0 - \mu}
+		\]
+		$N^{\text{start},\mu}_{\text{grid},x}$是当前子载波间隔$\mu$下的resouce grid的起始位置（$x$表示DL,UL,SL）\\
+		$N^{\text{size},\mu}_{\text{grid},x}$是当前子载波间隔$\mu$下的resouce grid的占用大小（$x$表示DL,UL,SL）\\
+		$(N^{\text{start},\mu}_{\text{grid},x} + N^{\text{size},\mu}_{\text{grid},x}/2)N_{\text{sc}}^{\text{RB}}$是当前子载波间隔$\mu$的中心子载波位置\\
+		$(N^{\text{start},\mu_0}_{\text{grid},x} + N^{\text{size},\mu_0}_{\text{grid},x}/2)N_{\text{sc}}^{\text{RB}}2^{\mu_0 - \mu}$是最大子载波间隔$\mu_0$的中心子载波位置（换算成$\mu$对应的子载波中心）
+		\item $N^{\text{start}}_{\text{BWP}, i}$ 是BWP的最小resource block的编号（initial access或active）\\
+		$(N^{\text{start}}_{\text{BWP}, i} - N^{\text{start}, \mu}_{\text{grid}})N^{\text{RB}}_{\text{SC}}$当前上行 BWP 的起始位置，相对于整个资源网格起始位置的偏移量（以子载波为单位）\\
+		$(N^{\text{start}}_{\text{BWP}, i} - N^{\text{start}, \mu}_{\text{grid}})N^{\text{RB}}_{\text{SC}} - N^{\text{size}, \mu}_{\text{grid}}N^{\text{RB}}_{\text{SC}}$ 减去半个网格宽度，得到BWP起点相对于网格中心的偏移
+		\item $n^{\text{start}}_{\text{RA}}$是相对active BWP的resource block 0的偏移
+		\item {\color{darkred}{后面加的部分}}
+			\begin{itemize}
+			\item $n_{\text{RA}}N^{\text{RA}}_{\text{RB}}N^{\text{RB}}_{\text{sc}}$, $n_{\text{RA}}$表示PRACH在频域的每个传输机会的索引号，$N^{\text{RB}}_{\text{sc}}$表示换算到对应\\
+			PUSCH的$\mu$的RB数量。\\
+			{\color{darkred}{注意：}}{\color{darkgreen}{FR2-2 PRACH has 139, 571, 1151; FR2-1 PRACH only has 139.}}
+			\item 在 FR1 的非授权频谱（例如 5 GHz 频段）中，为了与 Wi-Fi 等其他系统共存，频谱被划分为多个 RB 集合（RB set），每个 RB 集合之间插入了保护带（Guard Band），用来减少干扰。\\
+			$N^{\text{start}, \mu}_{\text{RB, UL}, n} $是RB set $n$ 的CRB index\\
+			$N^{\text{start}, \mu}_{\text{RB, UL}, n_0} $是RB set $n$ 的第一个PRACH频域机会（$n^{\text{start}}_{RA}$配置）\\
+			$N^{\text{start}, \mu}_{\text{RB, UL}, n_0 + n_{RA}} $是RB set $n$ 的第$n_{RA}$个PRACH频域机会\\
+			{\color{darkred}{注意：所有$n_{RA}$个PRACH传输机会都在当前RB set内}}
+			
+			\end{itemize}
+		\end{itemize}
+	\item $\bar{k}$是PRACH的频率偏移（小）
+	\end{itemize}
+	
+\subsection{时域部分}
+$t^{\text{RA}}_{\text{start}} \leq t < t^{\text{RA}}_{\text{start}} + (N_{\text{u}} + N_{\text{CP}, l}^{\text{RA}})T_\text{c}$
+\begin{itemize}
+\item $N_{\text{u}}$是PRACH 前导码中 Zadoff-Chu 序列（或其它低 PAPR 序列）在时域上所占用的样本数量，{\color{darkred}{具体见TS38211 Table 6.3.3.1-1 \& Table 6.3.3.1-2}}\cite{38211}\\
+\item $N_{\text{CP}, l}^{\text{RA}}$是第$l$的OFDM符号上的CP长度，{\color{darkred}{具体见TS38211 Table 6.3.3.1-1 \& Table 6.3.3.1-2}}\cite{38211}\\
+\[
+N_{\text{CP}, l}^{\text{RA}} = N_{\text{CP}}^{\text{RA}} + n \cdot 16 \kappa
+\]
+	\begin{itemize}
+	\item 当 $\Delta f_{\text{RA}}\in{1.25, 5}$ kHz（即长前导码 839 格式）时：$n=0$，没有额外补偿。
+	\item 当 $\Delta f_{\text{RA}}\in{15,30,60,120,480,960}$ kHz（即长前导码 839 格式）时：先看不补偿的PRACH时间$[t^{\text{RA}}_{\text{start}}, t^{\text{RA}}_{\text{start}} + (N_{\text{u}} + N_{\text{CP}}^{\text{RA}})T_\text{c}$ 在一个subframe内和时刻0、时刻$(\Delta f_{\max}N_f/2000)\cdot T_c=0.5$ms重复的次数$n$，每重复一次就要补偿$16 \kappa$。
+	\end{itemize}
+\item PRACH 的时域位置对齐到了普通上行符号的网格上，便于 gNB 统一管理时序
+\[
+t^{\text{RA}}_{\text{start}} = t^{\mu}_{\text{start}, l}
+\]
+\[
+t^{\mu}_{\text{start}, l} = 
+\begin{cases}
+0 & l = 0 \\
+t^{\mu}_{\text{start}, l-1} + (N_{\text{u}}^\mu + N_{\text{CP}, l-1}^{\text{RA}})T_\text{c}
+\end{cases}
+\]
+	\begin{itemize}
+	\item $N_{\text{u}}^\mu = 2048\kappa \cdot 2^{-\mu}$
+	\item $N_{\text{CP}, l}^\mu$
+		
+	\[
+	N_{\text{CP}, l}^\mu = 
+	\begin{cases}
+	512\kappa \cdot 2^{-\mu} 			& \text{extended CP} \\
+	144\kappa \cdot 2^{-\mu} + 16\kappa 	& \text{normal CP, }  l\in \{0, 7\cdot 2^\mu\} \\
+	144\kappa \cdot 2^{-\mu} 			& \text{normal CP, }  l\notin \{0, 7\cdot 2^\mu\}  \\
+	\end{cases}
+	\]
+	\item $\Delta f_{\text{RA}} \in\{1.25, 5\}$kHz, $\mu=0$；其他情况$\mu$的值满足$\Delta f_{\text{RA}}=15\cdot 2^\mu$kHz
+	\item $l$是prach占用的symbol index
+	\[
+	l = l_0 + n^{\text{RA}}_tN^{\text{RA}}_{\text{dur}} + 14n^{\text{RA}}_{\text{slot}}
+	\]
+		\begin{itemize}
+		\item $l_0$ 是TS38211 Tables 6.3.3.2-2 to 6.3.3.2-4里面的{\color{darkred}{starting symbol}}\cite{38211}
+		\item $n^{\text{RA}}_t=0,\cdots,N_{\text{t}}^{\text{RA, slot}}-1$是PRACH在一个slot内的传输机会。$\Delta L_{\text{RA}} \in\{139, 571, 1151\}$，$N_{\text{t}}^{\text{RA, slot}}$见TS38211 Tables 6.3.3.2-2 to 6.3.3.2-4里面的{\color{darkred}{number of time-domain PRACH occasions within a PRACH slot}}\cite{38211}；$\Delta L_{\text{RA}} = 839$，$N_{\text{t}}^{\text{RA, slot}}=1$\\
+		
+		{\color{darkred}{TS38211 Tables 6.3.3.2-2 to 6.3.3.2-4 preamble format是A1/B1, A2/B2 or A3/B3时，$n^{\text{RA}}_t$会决定具体的格式}}\cite{38211}
+			\begin{itemize}
+			\item $n^{\text{RA}}_t=N_{\text{t}}^{\text{RA, slot}}-1$，发B1, B2 or B3
+			\item 其他时刻发A1, A2 or A3
+			\end{itemize}					
+		
+		\item $N^{\text{RA}}_{\text{dur}}$见TS38211 Tables 6.3.3.2-2 to 6.3.3.2-4里面的{\color{darkred}{PRACH duration}}\cite{38211}
+		
+		\item $n^{\text{RA}}_{\text{slot}}$的设置
+			\begin{itemize}
+			\item $\Delta f_{\text{RA}} \in\{1.25, 5, 15, 60\}$kHz, $n^{\text{RA}}_{\text{slot}}=0$
+			\item $\Delta f_{\text{RA}} \in\{30, 120\}$kHz, TS38211 Tables 6.3.3.2-2 to 6.3.3.2-4里面的{\color{darkred}{Number of PRACH slots within a subframe}}或{\color{darkred}{Number of PRACH slots within a 60 kHz slot}}是1，则$n^{\text{RA}}_{\text{slot}}=1$；否则$n^{\text{RA}}_{\text{slot}}\in\{0,1\}$\cite{38211}
+			\item $\Delta f_{\text{RA}} \in\{480, 960\}$kHz\\
+			TS38211 Tables 6.3.3.2-4里面的{\color{darkred}{Number of PRACH slots within a 60 kHz slot}}是1\\
+			$n^{\text{RA}}_{\text{slot}}=7$ for $\Delta f_{\text{RA}}=480$kHz and $n^{\text{RA}}_{\text{slot}}=15$ for $\Delta f_{\text{RA}}=960$kHz
+			
+			Tables 6.3.3.2-4里面的{\color{darkred}{Number of PRACH slots within a 60 kHz slot}}是2\\
+			$n^{\text{RA}}_{\text{slot}}\in\{3,7\}$ for $\Delta f_{\text{RA}}=480$kHz and $n^{\text{RA}}_{\text{slot}}\in\{7,15\}$ for $\Delta f_{\text{RA}}=960$kHz
+			\end{itemize}
+		
+		
+		
+		\end{itemize}
+	\end{itemize}
+
+
+\end{itemize}
+
+\newpage
+\bibliographystyle{IEEEtran}
+\bibliography{../../common_latex/import_reference}
+\end{document}
